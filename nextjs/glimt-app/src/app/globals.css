@@ -1,21 +1,52 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: url('https://fonts.gstatic.com/s/bricolagegrotesque/v2/3y9K6as8bTXq_nANBjzKo3B4VaRBEQQQdmMp2g.woff2') format('woff2');
+  font-weight: 200 800;
+  font-display: swap;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7f5f0;
+  --foreground: #1a1918;
+  --grid-line: #d4cfc4;
+  --grid-dot: #b8b0a2;
+  --player-x: #c44536;
+  --player-x-glow: rgba(196, 69, 54, 0.3);
+  --player-o: #2d5a7b;
+  --player-o-glow: rgba(45, 90, 123, 0.3);
+  --win-glow: #daa520;
+  --accent: #8b7355;
+  --muted: #9a9288;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-grid-line: var(--grid-line);
+  --color-grid-dot: var(--grid-dot);
+  --color-player-x: var(--player-x);
+  --color-player-o: var(--player-o);
+  --color-accent: var(--accent);
+  --color-muted: var(--muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: 'Bricolage Grotesque', var(--font-geist-sans), system-ui, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #1a1918;
+    --foreground: #f7f5f0;
+    --grid-line: #2d2b28;
+    --grid-dot: #3d3a36;
+    --player-x: #e85a4f;
+    --player-x-glow: rgba(232, 90, 79, 0.4);
+    --player-o: #5a9bcf;
+    --player-o-glow: rgba(90, 155, 207, 0.4);
+    --accent: #c4a77d;
+    --muted: #6b665e;
   }
 }
 
@@ -23,4 +54,30 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--grid-dot);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* Grid pattern background */
+.grid-background {
+  background-image: 
+    radial-gradient(circle at center, var(--grid-dot) 1px, transparent 1px);
+  background-size: 48px 48px;
 }
