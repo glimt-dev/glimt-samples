@@ -167,17 +167,24 @@ export default function Luffarschack() {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const hasDraggedRef = useRef(false);
+  const dragStartPosRef = useRef({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewSize, setViewSize] = useState({ width: 0, height: 0 });
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
-        setViewSize({
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight,
-        });
+        const width = containerRef.current.clientWidth;
+        const height = containerRef.current.clientHeight;
+        setViewSize({ width, height });
+        // Center view on first measurement only
+        if (!initializedRef.current && width > 0 && height > 0) {
+          initializedRef.current = true;
+          setOffset({ x: width / 2, y: height / 2 });
+        }
       }
     };
     updateSize();
@@ -207,6 +214,8 @@ export default function Luffarschack() {
 
   const handleCellClick = useCallback(
     (x: number, y: number) => {
+      // Don't place a mark if we just finished dragging
+      if (hasDraggedRef.current) return;
       if (winner) return;
 
       const key = cellKey(x, y);
@@ -233,6 +242,8 @@ export default function Luffarschack() {
         // Left or middle mouse button
         setIsDragging(true);
         setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+        dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+        hasDraggedRef.current = false;
       }
     },
     [offset]
@@ -241,6 +252,12 @@ export default function Luffarschack() {
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
       if (isDragging) {
+        // Check if we've moved enough to count as a drag (not a click)
+        const dx = e.clientX - dragStartPosRef.current.x;
+        const dy = e.clientY - dragStartPosRef.current.y;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+          hasDraggedRef.current = true;
+        }
         setOffset({
           x: e.clientX - dragStart.x,
           y: e.clientY - dragStart.y,
@@ -277,14 +294,23 @@ export default function Luffarschack() {
     [zoom]
   );
 
-  const resetGame = useCallback(() => {
-    setGameState(new Map());
-    setCurrentPlayer("X");
-    setWinner(null);
-    setWinningCells(new Set());
-    setOffset({ x: viewSize.width / 2, y: viewSize.height / 2 });
-    setZoom(1);
-  }, [viewSize]);
+  const resetGame = useCallback(
+    (skipConfirm = false) => {
+      // Only confirm if game is in progress (has moves and no winner)
+      if (!skipConfirm && gameState.size > 0 && !winner) {
+        if (!window.confirm("Start a new game? Current progress will be lost.")) {
+          return;
+        }
+      }
+      setGameState(new Map());
+      setCurrentPlayer("X");
+      setWinner(null);
+      setWinningCells(new Set());
+      setOffset({ x: viewSize.width / 2, y: viewSize.height / 2 });
+      setZoom(1);
+    },
+    [viewSize, gameState.size, winner]
+  );
 
   const centerView = useCallback(() => {
     if (gameState.size === 0) {
@@ -314,12 +340,6 @@ export default function Luffarschack() {
     });
   }, [gameState, viewSize, zoom]);
 
-  // Center view on mount
-  useEffect(() => {
-    if (viewSize.width > 0 && viewSize.height > 0) {
-      setOffset({ x: viewSize.width / 2, y: viewSize.height / 2 });
-    }
-  }, [viewSize]);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
@@ -383,7 +403,7 @@ export default function Luffarschack() {
               <Move size={18} className="text-muted" />
             </button>
             <button
-              onClick={resetGame}
+              onClick={() => resetGame()}
               className="p-2 rounded-lg hover:bg-accent/10 transition-colors"
               title="New game"
             >
@@ -472,7 +492,7 @@ export default function Luffarschack() {
                   Game ended after {gameState.size} moves
                 </p>
                 <button
-                  onClick={resetGame}
+                  onClick={() => resetGame(true)}
                   className="px-6 py-3 rounded-xl bg-accent/20 hover:bg-accent/30 
                            transition-colors font-medium flex items-center gap-2 mx-auto"
                 >
