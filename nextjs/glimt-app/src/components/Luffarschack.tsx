@@ -236,38 +236,51 @@ export default function Luffarschack() {
     [gameState, currentPlayer, winner]
   );
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.button === 0 || e.button === 1) {
-        // Left or middle mouse button
-        setIsDragging(true);
-        setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
-        dragStartPosRef.current = { x: e.clientX, y: e.clientY };
-        hasDraggedRef.current = false;
+  const activePointerIdRef = useRef<number | null>(null);
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      // Left mouse button OR any touch/pen pointer
+      const isMouse = e.pointerType === "mouse";
+      const isAllowedMouseButton = e.button === 0 || e.button === 1;
+      if ((isMouse && !isAllowedMouseButton) || activePointerIdRef.current !== null) {
+        return;
       }
+
+      activePointerIdRef.current = e.pointerId;
+      // Capture ensures we keep receiving moves even when pointer leaves the element
+      e.currentTarget.setPointerCapture(e.pointerId);
+
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+      dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+      hasDraggedRef.current = false;
     },
     [offset]
   );
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (isDragging) {
-        // Check if we've moved enough to count as a drag (not a click)
-        const dx = e.clientX - dragStartPosRef.current.x;
-        const dy = e.clientY - dragStartPosRef.current.y;
-        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-          hasDraggedRef.current = true;
-        }
-        setOffset({
-          x: e.clientX - dragStart.x,
-          y: e.clientY - dragStart.y,
-        });
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isDragging || activePointerIdRef.current !== e.pointerId) return;
+
+      // Check if we've moved enough to count as a drag (not a tap/click)
+      const dx = e.clientX - dragStartPosRef.current.x;
+      const dy = e.clientY - dragStartPosRef.current.y;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        hasDraggedRef.current = true;
       }
+
+      setOffset({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y,
+      });
     },
     [isDragging, dragStart]
   );
 
-  const handleMouseUp = useCallback(() => {
+  const handlePointerUpOrCancel = useCallback((e: React.PointerEvent) => {
+    if (activePointerIdRef.current !== e.pointerId) return;
+    activePointerIdRef.current = null;
     setIsDragging(false);
   }, []);
 
@@ -416,15 +429,16 @@ export default function Luffarschack() {
       {/* Game area */}
       <div
         ref={containerRef}
-        className="flex-1 relative overflow-hidden cursor-grab active:cursor-grabbing grid-background"
+        className="flex-1 relative overflow-hidden cursor-grab active:cursor-grabbing grid-background select-none"
         style={{
           backgroundPosition: `${offset.x}px ${offset.y}px`,
           backgroundSize: `${48 * zoom}px ${48 * zoom}px`,
+          touchAction: "none",
         }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUpOrCancel}
+        onPointerCancel={handlePointerUpOrCancel}
         onWheel={handleWheel}
       >
         {/* Grid container */}
