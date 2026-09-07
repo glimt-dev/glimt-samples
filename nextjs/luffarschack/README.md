@@ -19,6 +19,23 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Aient telemetry
+
+Copy `.env.example` to `.env.local` and provide the server and browser
+publishable keys for the target Aient environment. Production builds also need
+`COMMIT_SHA`, and use it for both runtime release metadata and browser/server
+source-map uploads. `COMMIT_REF` and `AIENT_ENV` are copied to their
+`NEXT_PUBLIC_*` counterparts when those are not set explicitly.
+
+The production `pnpm build` command emits browser source maps, builds the Next.js
+server maps, then uploads both outputs with the installed `@aient/sourcemaps`
+CLI. Configure the upload-scoped `AIENT_API_KEY` in the hosting provider's
+secret store; it must not be a publishable ingest key or a `NEXT_PUBLIC_*`
+variable. The build fails rather than deploying an artifact without matching
+maps. If server stack paths include an absolute application root, set
+`AIENT_SERVER_BUNDLE_PREFIX` to that root plus `/.next/server` (for example,
+`/app/.next/server`).
+
 ## Bug notes
 
 ### Pointer capture swallowed every board click
