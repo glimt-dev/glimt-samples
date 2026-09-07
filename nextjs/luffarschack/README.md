@@ -19,6 +19,28 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Aient telemetry
+
+Copy `.env.example` to `.env.local` and provide the server and browser
+publishable keys for the target Aient environment. Production builds also need
+a commit SHA (`COMMIT_SHA` outside Vercel), and use it for both runtime release
+metadata and browser/server source-map uploads. `COMMIT_REF` and `AIENT_ENV` are copied to their
+`NEXT_PUBLIC_*` counterparts when those are not set explicitly. On Vercel,
+`VERCEL_GIT_COMMIT_SHA`, `VERCEL_GIT_COMMIT_REF`, and `VERCEL_ENV` provide the
+defaults automatically (`production` is normalized to the `prod` release
+environment).
+
+The production `pnpm build` command emits browser source maps, builds the Next.js
+server maps, then uploads both outputs with the installed `@aient/sourcemaps`
+CLI. Configure the upload-scoped `AIENT_API_KEY` in the hosting provider's
+secret store; it must not be a publishable ingest key or a `NEXT_PUBLIC_*`
+variable. The build fails rather than deploying an artifact without matching
+maps. Vercel preview builds without access to the secret skip uploads; they
+upload normally when the secret is available, and Vercel production deployments
+remain fail-closed. If server stack paths include an absolute application root, set
+`AIENT_SERVER_BUNDLE_PREFIX` to that root plus `/.next/server` (for example,
+`/app/.next/server`).
+
 ## Bug notes
 
 ### Pointer capture swallowed every board click
